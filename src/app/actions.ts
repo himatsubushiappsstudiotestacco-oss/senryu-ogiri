@@ -173,6 +173,70 @@ export async function adminDeleteAnswer(answerId: string) {
   return { success: true }
 }
 
+export async function updateUsername(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ログインが必要です' }
+
+  const username = (formData.get('username') as string).trim()
+  if (!username) return { error: 'ユーザー名を入力してください' }
+  if (username.length > 20) return { error: 'ユーザー名は20文字以内にしてください' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ username })
+    .eq('id', user.id)
+
+  if (error) return { error: 'ユーザー名の更新に失敗しました' }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+export async function deleteAnswer(answerId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ログインが必要です' }
+
+  const { error } = await supabase
+    .from('answers')
+    .delete()
+    .eq('id', answerId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: '削除に失敗しました' }
+
+  const { data: profile } = await supabase.from('profiles').select('total_answers').eq('id', user.id).single()
+  if (profile && profile.total_answers > 0) {
+    await supabase.from('profiles').update({ total_answers: profile.total_answers - 1 }).eq('id', user.id)
+  }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+export async function deleteTopic(topicId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ログインが必要です' }
+
+  const { error } = await supabase
+    .from('topics')
+    .delete()
+    .eq('id', topicId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: '削除に失敗しました' }
+
+  const { data: profile } = await supabase.from('profiles').select('total_topics').eq('id', user.id).single()
+  if (profile && profile.total_topics > 0) {
+    await supabase.from('profiles').update({ total_topics: profile.total_topics - 1 }).eq('id', user.id)
+  }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
 async function checkAndAwardBadges(userId: string) {
   const supabase = await createClient()
 

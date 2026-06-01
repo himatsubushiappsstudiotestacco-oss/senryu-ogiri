@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import UsernameEditForm from './UsernameEditForm'
+import DeleteButton from './DeleteButton'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -49,7 +51,7 @@ export default async function ProfilePage() {
         <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-2xl mx-auto mb-3">
           🌸
         </div>
-        <h1 className="text-xl font-bold text-indigo-900">{profile?.username}</h1>
+        <UsernameEditForm initialUsername={profile?.username ?? ''} />
         <div className="flex justify-center gap-6 mt-4 text-sm text-gray-500">
           <div className="text-center">
             <p className="text-xl font-bold text-indigo-700">{profile?.total_likes_received ?? 0}</p>
@@ -92,12 +94,15 @@ export default async function ProfilePage() {
           <h2 className="text-sm font-medium text-gray-500 mb-3">自分のお題</h2>
           <div className="flex flex-col gap-2">
             {myTopics?.map(t => (
-              <Link key={t.id} href={`/topics/${t.id}`} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between hover:border-indigo-200 transition-colors">
-                <span className="font-medium text-indigo-800 tracking-wider">{t.kami_no_ku}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${t.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                  {t.status === 'open' ? '募集中' : '締切済'}
-                </span>
-              </Link>
+              <div key={t.id} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between hover:border-indigo-200 transition-colors">
+                <Link href={`/topics/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="font-medium text-indigo-800 tracking-wider truncate">{t.kami_no_ku}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${t.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                    {t.status === 'open' ? '募集中' : '締切済'}
+                  </span>
+                </Link>
+                <DeleteButton type="topic" id={t.id} />
+              </div>
             ))}
           </div>
         </div>
@@ -109,13 +114,16 @@ export default async function ProfilePage() {
           <h2 className="text-sm font-medium text-gray-500 mb-3">自分の回答</h2>
           <div className="flex flex-col gap-2">
             {myAnswers?.map(a => (
-              <Link key={a.id} href={`/topics/${a.topic_id}`} className="bg-white rounded-xl border border-gray-100 p-3 hover:border-indigo-200 transition-colors">
-                <p className="text-xs text-gray-400 mb-1">
-                  「{(a.topics as unknown as { kami_no_ku: string })?.kami_no_ku}」への回答
-                </p>
-                <p className="text-sm font-medium text-indigo-700 tracking-wider">{a.naka_no_ku} / {a.shimo_no_ku}</p>
-                <p className="text-xs text-rose-500 mt-1">❤️ {a.likes_count}</p>
-              </Link>
+              <div key={a.id} className="bg-white rounded-xl border border-gray-100 p-3 hover:border-indigo-200 transition-colors flex items-start gap-2">
+                <Link href={`/topics/${a.topic_id}`} className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 mb-1">
+                    「{(a.topics as unknown as { kami_no_ku: string })?.kami_no_ku}」への回答
+                  </p>
+                  <p className="text-sm font-medium text-indigo-700 tracking-wider">{a.naka_no_ku} / {a.shimo_no_ku}</p>
+                  <p className="text-xs text-rose-500 mt-1">❤️ {a.likes_count}</p>
+                </Link>
+                <DeleteButton type="answer" id={a.id} />
+              </div>
             ))}
           </div>
         </div>
