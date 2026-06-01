@@ -16,6 +16,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
     .from('topics')
     .select('*, profiles(username)')
     .eq('id', id)
+    .is('deleted_at', null)
     .single()
 
   if (!topic) notFound()
@@ -25,6 +26,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
     .select('*, profiles(username)')
     .eq('topic_id', id)
     .eq('is_hidden', false)
+    .is('deleted_at', null)
     .order('likes_count', { ascending: false })
 
   let likedIds = new Set<string>()

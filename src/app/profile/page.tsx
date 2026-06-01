@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import UsernameEditForm from './UsernameEditForm'
 import DeleteButton from './DeleteButton'
+import RestoreButton from './RestoreButton'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -27,6 +28,7 @@ export default async function ProfilePage() {
     .from('topics')
     .select('id, kami_no_ku, status, closes_at')
     .eq('user_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(10)
 
@@ -34,7 +36,24 @@ export default async function ProfilePage() {
     .from('answers')
     .select('id, naka_no_ku, shimo_no_ku, likes_count, topic_id, topics(kami_no_ku)')
     .eq('user_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
+    .limit(10)
+
+  const { data: deletedTopics } = await supabase
+    .from('topics')
+    .select('id, kami_no_ku, deleted_at')
+    .eq('user_id', user.id)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+    .limit(10)
+
+  const { data: deletedAnswers } = await supabase
+    .from('answers')
+    .select('id, naka_no_ku, shimo_no_ku, topic_id, deleted_at, topics(kami_no_ku)')
+    .eq('user_id', user.id)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
     .limit(10)
 
   async function signOut() {
@@ -123,6 +142,32 @@ export default async function ProfilePage() {
                   <p className="text-xs text-rose-500 mt-1">❤️ {a.likes_count}</p>
                 </Link>
                 <DeleteButton type="answer" id={a.id} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 削除済み */}
+      {((deletedTopics?.length ?? 0) > 0 || (deletedAnswers?.length ?? 0) > 0) && (
+        <div>
+          <h2 className="text-sm font-medium text-gray-400 mb-3">削除済み（復元できます）</h2>
+          <div className="flex flex-col gap-2">
+            {deletedTopics?.map(t => (
+              <div key={t.id} className="bg-gray-50 rounded-xl border border-gray-100 p-3 flex items-center justify-between">
+                <span className="text-sm text-gray-400 tracking-wider truncate">{t.kami_no_ku}</span>
+                <RestoreButton type="topic" id={t.id} />
+              </div>
+            ))}
+            {deletedAnswers?.map(a => (
+              <div key={a.id} className="bg-gray-50 rounded-xl border border-gray-100 p-3 flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-300 mb-0.5">
+                    「{(a.topics as unknown as { kami_no_ku: string })?.kami_no_ku}」への回答
+                  </p>
+                  <p className="text-sm text-gray-400 tracking-wider">{a.naka_no_ku} / {a.shimo_no_ku}</p>
+                </div>
+                <RestoreButton type="answer" id={a.id} />
               </div>
             ))}
           </div>

@@ -200,16 +200,11 @@ export async function deleteAnswer(answerId: string) {
 
   const { error } = await supabase
     .from('answers')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', answerId)
     .eq('user_id', user.id)
 
   if (error) return { error: '削除に失敗しました' }
-
-  const { data: profile } = await supabase.from('profiles').select('total_answers').eq('id', user.id).single()
-  if (profile && profile.total_answers > 0) {
-    await supabase.from('profiles').update({ total_answers: profile.total_answers - 1 }).eq('id', user.id)
-  }
 
   revalidatePath('/profile')
   return { success: true }
@@ -222,16 +217,45 @@ export async function deleteTopic(topicId: string) {
 
   const { error } = await supabase
     .from('topics')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', topicId)
     .eq('user_id', user.id)
 
   if (error) return { error: '削除に失敗しました' }
 
-  const { data: profile } = await supabase.from('profiles').select('total_topics').eq('id', user.id).single()
-  if (profile && profile.total_topics > 0) {
-    await supabase.from('profiles').update({ total_topics: profile.total_topics - 1 }).eq('id', user.id)
-  }
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+export async function restoreAnswer(answerId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ログインが必要です' }
+
+  const { error } = await supabase
+    .from('answers')
+    .update({ deleted_at: null })
+    .eq('id', answerId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: '復元に失敗しました' }
+
+  revalidatePath('/profile')
+  return { success: true }
+}
+
+export async function restoreTopic(topicId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'ログインが必要です' }
+
+  const { error } = await supabase
+    .from('topics')
+    .update({ deleted_at: null })
+    .eq('id', topicId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: '復元に失敗しました' }
 
   revalidatePath('/profile')
   return { success: true }

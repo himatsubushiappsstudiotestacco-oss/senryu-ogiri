@@ -20,6 +20,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     .from('topics')
     .select(`*, profiles(username), answers(count)`)
     .eq('status', isOpen ? 'open' : 'closed')
+    .is('deleted_at', null)
 
   if (!isOpen) {
     const since = new Date(Date.now() - PERIOD_DAYS[activePeriod] * 24 * 60 * 60 * 1000).toISOString()
